@@ -1,0 +1,20 @@
+{
+  "ativos": [
+    { "id": "BTC",   "nome": "Bitcoin",            "tipo": "cripto",  "fonte": "coingecko", "simbolo": "bitcoin",  "moeda": "BRL" },
+    { "id": "PETR4", "nome": "Petrobras PN",       "tipo": "acao-br", "fonte": "yahoo",     "simbolo": "PETR4.SA", "moeda": "BRL" },
+    { "id": "VALE3", "nome": "Vale ON",            "tipo": "acao-br", "fonte": "yahoo",     "simbolo": "VALE3.SA", "moeda": "BRL" },
+    { "id": "ITUB4", "nome": "Itaú Unibanco PN",   "tipo": "acao-br", "fonte": "yahoo",     "simbolo": "ITUB4.SA", "moeda": "BRL" },
+    { "id": "BBAS3", "nome": "Banco do Brasil ON", "tipo": "acao-br", "fonte": "yahoo",     "simbolo": "BBAS3.SA", "moeda": "BRL" },
+    { "id": "WEGE3", "nome": "WEG ON",             "tipo": "acao-br", "fonte": "yahoo",     "simbolo": "WEGE3.SA", "moeda": "BRL" },
+    { "id": "AAPL",  "nome": "Apple",              "tipo": "acao-us", "fonte": "yahoo",     "simbolo": "AAPL",     "moeda": "USD" },
+    { "id": "NVDA",  "nome": "Nvidia",             "tipo": "acao-us", "fonte": "yahoo",     "simbolo": "NVDA",     "moeda": "USD" },
+    { "id": "MSFT",  "nome": "Microsoft",          "tipo": "acao-us", "fonte": "yahoo",     "simbolo": "MSFT",     "moeda": "USD" },
+    { "id": "AMZN",  "nome": "Amazon",             "tipo": "acao-us", "fonte": "yahoo",     "simbolo": "AMZN",     "moeda": "USD" },
+    { "id": "GOOGL", "nome": "Alphabet (Google)",  "tipo": "acao-us", "fonte": "yahoo",     "simbolo": "GOOGL",    "moeda": "USD" }
+  ],
+  "alertaBitcoin": {
+    "diasMinima": 30,
+    "novoAlertaSeCairMaisPct": 2,
+    "repetirAposHoras": 12
+  }
+}
