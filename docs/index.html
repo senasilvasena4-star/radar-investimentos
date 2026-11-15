@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Radar de Investimentos</title>
+<meta name="theme-color" content="#0B0E0D">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: app de uma coluna para celular; Bitcoin em destaque no topo, listas de ações em abas, ficha do ativo em painel */
+:root{
+  --bg:#F3F5F2; --surface:#FFFFFF; --ink:#111613; --muted:#5B655F; --line:#DCE1DD; --grid:#E9EDEA;
+  --series:#1C5BD0; --wash:rgba(28,91,208,.10); --up:#1D7C43; --down:#C2352A; --warn:#A86C12; --btc:#C26B0A;
+  --shadow:0 12px 32px rgba(17,22,19,.16);
+  --f:"Inter Tight",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0B0E0D; --surface:#141917; --ink:#E8EEEA; --muted:#93A099; --line:#25302A; --grid:#1C2520;
+  --series:#6F9FFF; --wash:rgba(111,159,255,.12); --up:#3DBE72; --down:#F06A5D; --warn:#E2A63B; --btc:#F2A33A;
+  --shadow:0 12px 32px rgba(0,0,0,.55); color-scheme:dark}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f);font-size:15px;line-height:1.45;
+  padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--series);outline-offset:2px}
+h1,h2,h3{margin:0;letter-spacing:-.01em}
+p{margin:0}
+.tn{font-variant-numeric:tabular-nums}
+.app{max-width:640px;margin:0 auto;padding-block:0 40px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.app > *,.card > *,.ahead > *{min-width:0}
+.ahead .read{white-space:normal;text-align:left}
+
+/* topo */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:12px 8px}
+.brand{display:flex;align-items:center;gap:9px}
+.brand svg{width:30px;height:30px;flex:none}
+.brand b{font-size:17px;font-weight:700;display:block;line-height:1.1}
+.brand small{font-size:12px;color:var(--muted)}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;height:38px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.iconbtn svg{width:16px;height:16px}
+.spin svg{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+
+/* alerta */
+.alert{border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;background:color-mix(in srgb,var(--up) 13%,var(--surface));border:1px solid color-mix(in srgb,var(--up) 45%,transparent)}
+.alert .ic{grid-row:span 2;width:34px;height:34px;border-radius:10px;background:var(--up);color:#fff;display:grid;place-items:center}
+.alert .ic svg{width:18px;height:18px}
+.alert b{font-size:15px}
+.alert p{font-size:13.5px;color:var(--muted)}
+
+/* cartões */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.ahead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.tk{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.02em}
+.ahead h2{font-size:17px;font-weight:600}
+.hero{font-size:clamp(34px,10vw,46px);font-weight:700;line-height:1.05;letter-spacing:-.02em}
+.sub{font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chg{display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:600;border-radius:7px;padding:2px 7px;background:var(--grid);white-space:nowrap}
+.chg.up{color:var(--up)}.chg.down{color:var(--down)}
+.chg span{color:var(--muted);font-weight:500}
+.read{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;border-radius:999px;padding:3px 10px;border:1px solid currentColor;white-space:nowrap}
+.read::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.read.buy{color:var(--up)}.read.att{color:var(--warn)}.read.str{color:var(--down)}.read.neu{color:var(--muted)}
+.seg{display:flex;gap:4px;background:var(--grid);border-radius:10px;padding:3px;align-self:flex-start}
+.seg button{border:0;background:transparent;border-radius:8px;padding:5px 11px;font-size:13px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.chart{position:relative;min-height:210px}
+.chart svg{display:block;width:100%;height:210px;overflow:visible;touch-action:pan-y}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;border-radius:8px;padding:5px 8px;white-space:nowrap;transform:translate(-50%,-110%);box-shadow:var(--shadow)}
+.tip b{display:block;font-size:13.5px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kv{background:var(--bg);border-radius:10px;padding:8px 10px;min-width:0}
+.kv span{display:block;font-size:11.5px;color:var(--muted)}
+.kv b{font-size:14.5px;font-weight:600;overflow-wrap:anywhere}
+.meter .lb{flex-wrap:wrap;gap:2px 10px}
+.meter{display:flex;flex-direction:column;gap:6px}
+.meter .tr{position:relative;height:8px;border-radius:99px;background:var(--grid)}
+.meter .dot{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--series);border:2px solid var(--surface);transform:translate(-50%,-50%)}
+.meter .lb{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.sec{display:flex;flex-direction:column;gap:8px}
+.sec h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.sigs{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.sigs li{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.sigs li i{flex:none;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:700;color:#fff;margin-top:1px}
+.sigs .compra i{background:var(--up)}.sigs .alerta i{background:var(--down)}.sigs .info i{background:var(--muted)}
+.scen{display:flex;flex-direction:column;gap:6px}
+.scen .bar{position:relative;height:26px}
+.scen .b95{position:absolute;top:9px;height:8px;border-radius:99px;background:var(--wash)}
+.scen .b68{position:absolute;top:9px;height:8px;border-radius:99px;background:var(--series);opacity:.55}
+.scen .now{position:absolute;top:3px;width:3px;height:20px;border-radius:2px;background:var(--ink)}
+.note{font-size:12px;color:var(--muted)}
+
+/* listas */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:transparent;padding:10px 12px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.rows{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 72px auto;gap:10px;align-items:center;border:0;border-bottom:1px solid var(--line);background:transparent;padding:12px 14px;text-align:left;width:100%}
+.row:last-child{border-bottom:0}
+.row:active{background:var(--bg)}
+.row .nm{min-width:0}
+.row .nm b{display:block;font-size:15px;font-weight:600}
+.row .nm span{display:block;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .px{text-align:right}
+.row .px b{display:block;font-weight:600}
+.spark{width:72px;height:30px;display:block}
+
+/* alertas */
+.hist{display:flex;flex-direction:column;gap:0;margin:0;padding:0;list-style:none}
+.hist li{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.hist li:last-child{border-bottom:0}
+.status{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:14px}
+.status i{width:10px;height:10px;border-radius:50%;flex:none}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:600;background:var(--ink);color:var(--bg);width:100%}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:14px}
+
+/* painel */
+.backdrop{position:fixed;inset:0;background:rgba(5,8,7,.5);z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
+.backdrop.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-height:92%;overflow-y:auto;background:var(--bg);border-radius:20px 20px 0 0;box-shadow:var(--shadow);transform:translateY(105%);transition:transform .26s ease;
+  padding:8px max(14px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+.sheet.open{transform:none}
+.sheet-in{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.grab{width:42px;height:5px;border-radius:9px;background:var(--line);margin:4px auto}
+.x{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:38px;height:38px;font-size:20px;line-height:1;flex:none}
+.foot{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:40;max-width:90vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.empty{padding:30px 10px;text-align:center;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.sheet,.backdrop,.toast{transition:none}.spin svg{animation:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--ink)"/><path d="M7 21l5-6 4 3 7-9" fill="none" stroke="var(--bg)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="9" r="2.4" fill="var(--btc)"/></svg>
+      <div><b>Radar</b><small id="upd">Carregando…</small></div>
+    </div>
+    <button class="iconbtn" id="refresh" aria-label="Atualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg>Atualizar</button>
+  </header>
+
+  <div id="alertBox"></div>
+  <section class="card" id="btcCard"><div class="empty">Carregando cotações…</div></section>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-t="acao-br" aria-selected="true">Ações Brasil</button>
+    <button role="tab" data-t="acao-us" aria-selected="false">Ações EUA</button>
+    <button role="tab" data-t="alertas" aria-selected="false">Alertas</button>
+  </nav>
+  <section id="listView"><div class="rows" id="rows"></div></section>
+  <section id="alertView" hidden style="display:flex;flex-direction:column;gap:12px"></section>
+
+  <footer class="foot">
+    <p><b>Não é recomendação de investimento.</b> Os sinais seguem regras técnicas simples e as projeções são cenários estatísticos baseados na oscilação passada. Preços passados não garantem resultados futuros. Decida com cuidado e, se precisar, procure um profissional.</p>
+    <p id="src"></p>
+  </footer>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Detalhes do ativo"><div class="sheet-in" id="sheetIn"></div></aside>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let DATA=null, TAB='acao-br';
+const store=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
+
+/* ---------- formatos ---------- */
+const money=(v,moeda,dec)=>v==null?'—':new Intl.NumberFormat('pt-BR',{style:'currency',currency:moeda,minimumFractionDigits:dec??(v>=10000?0:2),maximumFractionDigits:dec??(v>=10000?0:2)}).format(v);
+const pct=(v,d=1)=>v==null?'—':(v>0?'+':v<0?'−':'')+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
+const compact=(v)=>Math.abs(v)>=1e6?(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:2})+' mi':Math.abs(v)>=1e4?(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+' mil':v.toLocaleString('pt-BR',{maximumFractionDigits:2});
+const dt=t=>new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+const dd=t=>new Date(t).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.','');
+function ago(t){const m=Math.round((Date.now()-t)/60000);return m<1?'agora':m<60?`há ${m} min`:m<1440?`há ${Math.round(m/60)} h`:`há ${Math.round(m/1440)} dias`}
+const chg=(v,lbl)=>`<span class="chg ${v>0?'up':v<0?'down':''}">${v>0?'▲':v<0?'▼':''} ${pct(v)} <span>${lbl}</span></span>`;
+const readCls=l=>/Zona/.test(l)?'buy':/Atenção/.test(l)?'att':/Esticado/.test(l)?'str':'neu';
+
+/* ---------- gráfico ---------- */
+function niceTicks(min,max,n=4){const span=max-min||1,step0=span/n,mag=10**Math.floor(Math.log10(step0)),f=step0/mag,step=(f<1.5?1:f<3?2:f<7?5:10)*mag;const out=[];for(let v=Math.ceil(min/step)*step;v<=max+1e-9;v+=step)out.push(v);return out}
+function chart(el,serie,opt){
+  const W=Math.max(el.clientWidth,260),H=210,pl=4,pr=56,pt=14,pb=24;
+  const xs=serie.map(p=>p[0]*1000),ys=serie.map(p=>p[1]);
+  let lo=Math.min(...ys),hi=Math.max(...ys);if(opt.ref!=null){lo=Math.min(lo,opt.ref);hi=Math.max(hi,opt.ref)}const pad=(hi-lo)*.08||1;lo-=pad;hi+=pad;
+  const x0=xs[0],x1=xs[xs.length-1]||x0+1;
+  const X=t=>pl+(t-x0)/(x1-x0||1)*(W-pl-pr),Y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb);
+  const ticks=niceTicks(lo,hi);
+  const line=serie.map((p,i)=>`${i?'L':'M'}${X(xs[i]).toFixed(1)},${Y(ys[i]).toFixed(1)}`).join('');
+  const area=line+`L${X(x1).toFixed(1)},${H-pb}L${X(x0).toFixed(1)},${H-pb}Z`;
+  const xl=[0,Math.floor(xs.length/2),xs.length-1].map(i=>`<text x="${X(xs[i])}" y="${H-6}" text-anchor="${i===0?'start':i===xs.length-1?'end':'middle'}" font-size="11" fill="var(--muted)">${dd(xs[i])}</text>`).join('');
+  const last=serie.length-1;
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label)}">
+    ${ticks.map(v=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${W-pr+6}" y="${Y(v)+4}" font-size="11" fill="var(--muted)" class="tn">${compact(v)}</text>`).join('')}
+    <path d="${area}" fill="var(--wash)"/>
+    <path d="${line}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${opt.ref!=null?`<line x1="${pl}" x2="${W-pr}" y1="${Y(opt.ref)}" y2="${Y(opt.ref)}" stroke="var(--up)" stroke-width="1.5"/><text x="${pl+4}" y="${Y(opt.ref)+14}" font-size="11" fill="var(--ink)">${esc(opt.refLabel)}</text>`:''}
+    <circle cx="${X(xs[last])}" cy="${Y(ys[last])}" r="4.5" fill="var(--series)" stroke="var(--surface)" stroke-width="2"/>
+    ${xl}
+    <g id="hv" style="display:none"><line y1="${pt}" y2="${H-pb}" stroke="var(--muted)" stroke-width="1"/><circle r="5" fill="var(--series)" stroke="var(--surface)" stroke-width="2"/></g>
+    <rect x="${pl}" y="0" width="${W-pl-pr}" height="${H}" fill="transparent" class="hit"/>
+  </svg><div class="tip" hidden></div>`;
+  const svg=el.querySelector('svg'),hv=svg.querySelector('#hv'),tip=el.querySelector('.tip'),hit=svg.querySelector('.hit');
+  const move=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width;let i=0,b=1e18;xs.forEach((t,k)=>{const d=Math.abs(X(t)-px);if(d<b){b=d;i=k}});
+    hv.style.display='';hv.querySelector('line').setAttribute('x1',X(xs[i]));hv.querySelector('line').setAttribute('x2',X(xs[i]));hv.querySelector('circle').setAttribute('cx',X(xs[i]));hv.querySelector('circle').setAttribute('cy',Y(ys[i]));
+    tip.hidden=false;tip.style.left=(X(xs[i])*r.width/W)+'px';tip.style.top=(Y(ys[i])*r.height/H)+'px';tip.innerHTML=`<b class="tn">${money(ys[i],opt.moeda)}</b>${new Date(xs[i]).toLocaleDateString('pt-BR')}`};
+  const out=()=>{hv.style.display='none';tip.hidden=true};
+  hit.addEventListener('pointermove',move);hit.addEventListener('pointerdown',move);hit.addEventListener('pointerleave',out);
+}
+function spark(serie){
+  const s=serie.slice(-30),ys=s.map(p=>p[1]),lo=Math.min(...ys),hi=Math.max(...ys),W=72,H=30;
+  const pts=ys.map((v,i)=>`${(i/(ys.length-1)*(W-6)+3).toFixed(1)},${(3+(1-(v-lo)/(hi-lo||1))*(H-6)).toFixed(1)}`);
+  const up=ys[ys.length-1]>=ys[0];const lp=pts[pts.length-1].split(',');
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts.join(' ')}" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" opacity=".7"/><circle cx="${lp[0]}" cy="${lp[1]}" r="3" fill="${up?'var(--up)':'var(--down)'}"/></svg>`;
+}
+
+/* ---------- ficha do ativo ---------- */
+const RANGES={'30D':30,'90D':90,'1A':366};
+function detail(a,host,opt={}){
+  const m=a.m,mo=a.moeda,cid='ch-'+a.id+(opt.sheet?'-s':'');
+  let rg=store('rg-'+a.id)||(a.tipo==='cripto'?'90D':'90D');
+  const sc=m.cenario30;
+  const scale=sc?(v=>((v-sc.baixo95)/(sc.alto95-sc.baixo95)*100).toFixed(1)):null;
+  host.innerHTML=`
+   <div class="ahead"><div><div class="tk">${esc(a.id)} · ${a.tipo==='cripto'?'Cripto':a.tipo==='acao-br'?'B3':'EUA'}</div><h2>${esc(a.nome)}</h2></div>
+     ${opt.sheet?`<button class="x" id="sx" aria-label="Fechar">×</button>`:`<span class="read ${readCls(a.leitura)}">${esc(a.leitura)}</span>`}</div>
+   <div><div class="hero">${money(a.preco,mo)}</div>
+     <div class="sub">${a.precoUSD?money(a.precoUSD,'USD',0)+' · ':''}${mo==='USD'&&a.precoBRL?'≈ '+money(a.precoBRL,'BRL')+' · ':''}cotação ${a.horaPreco?dt(a.horaPreco):''}${a.ok===false?' · <b style="color:var(--down)">não atualizada</b>':''}</div></div>
+   <div class="chips">${chg(m.var1d,a.tipo==='cripto'?'24h':'dia')}${chg(m.var7d,'7d')}${chg(m.var30d,'30d')}${chg(m.var1a,'12m')}</div>
+   ${opt.sheet?`<span class="read ${readCls(a.leitura)}" style="align-self:flex-start">${esc(a.leitura)}</span>`:''}
+   <div class="seg" role="group" aria-label="Período do gráfico">${Object.keys(RANGES).map(k=>`<button data-rg="${k}" aria-pressed="${k===rg}">${k}</button>`).join('')}</div>
+   <div class="chart" id="${cid}"></div>
+   <div class="meter"><div class="lb"><span>Mínima 30d ${money(m.min30,mo)}</span><span>Máxima 30d ${money(m.max30,mo)}</span></div>
+     <div class="tr"><div class="dot" style="left:${Math.min(100,Math.max(0,m.posFaixa30??50))}%"></div></div>
+     <div class="note">Preço atual está a ${m.posFaixa30==null?'—':Math.round(m.posFaixa30)+'%'} do caminho entre a mínima e a máxima do mês.</div></div>
+   <div class="grid2 tn">
+     <div class="kv"><span>Mínima 7 dias</span><b>${money(m.min7,mo)}</b></div><div class="kv"><span>Máxima 7 dias</span><b>${money(m.max7,mo)}</b></div>
+     <div class="kv"><span>Mínima 12 meses</span><b>${money(m.min52,mo)}</b></div><div class="kv"><span>Máxima 12 meses</span><b>${money(m.max52,mo)}</b></div>
+   </div>
+   <div class="sec"><h3>Sinais pela regra</h3><ul class="sigs">${a.sinais.map(s=>`<li class="${s.tipo}"><i>${s.tipo==='compra'?'↓':s.tipo==='alerta'?'↑':'i'}</i>${esc(s.txt)}</li>`).join('')||'<li class="info"><i>i</i>Sem sinais relevantes agora.</li>'}</ul></div>
+   <div class="sec"><h3>Indicadores</h3><div class="grid2 tn">
+     <div class="kv"><span>Média 20 dias</span><b>${money(m.mm20,mo)}</b></div><div class="kv"><span>Média 50 dias</span><b>${money(m.mm50,mo)}</b></div>
+     <div class="kv"><span>Média 200 dias</span><b>${money(m.mm200,mo)}</b></div><div class="kv"><span>IFR 14 (RSI)</span><b>${m.rsi14==null?'—':m.rsi14.toFixed(0)}</b></div>
+     <div class="kv"><span>Volatilidade anual</span><b>${m.vol30==null?'—':m.vol30.toFixed(0)+'%'}</b></div><div class="kv"><span>Distância da máxima 12m</span><b>${pct(m.quedaTopo)}</b></div>
+   </div><p class="note">IFR abaixo de 30 costuma indicar exagero na queda; acima de 70, exagero na alta. Volatilidade calculada nos últimos 30 dias.</p></div>
+   ${sc?`<div class="sec"><h3>Projeção para 30 dias (cenário)</h3>
+     <div class="scen"><div class="bar"><div class="b95" style="left:0;right:0"></div><div class="b68" style="left:${scale(sc.baixo)}%;width:${scale(sc.alto)-scale(sc.baixo)}%"></div><div class="now" style="left:calc(${scale(a.preco)}% - 1.5px)"></div></div>
+     <div class="grid2 tn"><div class="kv"><span>Faixa provável (≈68%)</span><b>${money(sc.baixo,mo)} a ${money(sc.alto,mo)}</b></div><div class="kv"><span>Faixa ampla (≈95%)</span><b>${money(sc.baixo95,mo)} a ${money(sc.alto95,mo)}</b></div></div>
+     <p class="note">Calculado com a volatilidade recente, supondo que o preço oscile como no último mês. Não prevê a direção: mostra até onde o preço costuma ir.</p></div></div>`:''}`;
+  const draw=()=>{const n=RANGES[rg],cut=Date.now()/1000-n*86400;const s=a.serie.filter(p=>p[0]>=cut);chart($(cid),s.length>2?s:a.serie,{moeda:mo,ref:m.min30,refLabel:'Mínima 30d',label:`Preço de ${a.nome}, ${rg}`})};
+  host.querySelectorAll('[data-rg]').forEach(b=>b.onclick=()=>{rg=b.dataset.rg;store('rg-'+a.id,rg);host.querySelectorAll('[data-rg]').forEach(x=>x.setAttribute('aria-pressed',x===b));draw()});
+  requestAnimationFrame(draw);
+  if(opt.sheet)$('sx').onclick=closeSheet;
+  host._redraw=draw;
+}
+
+/* ---------- listas ---------- */
+function renderRows(){
+  const list=DATA.ativos.filter(a=>a.tipo===TAB);
+  $('rows').innerHTML=list.map(a=>`<button class="row" data-id="${a.id}">
+    <span class="nm"><b>${esc(a.id)}</b><span>${esc(a.nome)}</span><span style="color:var(--${readCls(a.leitura)==='buy'?'up':readCls(a.leitura)==='str'?'down':readCls(a.leitura)==='att'?'warn':'muted'})">${esc(a.leitura)}</span></span>
+    ${spark(a.serie)}
+    <span class="px tn"><b>${money(a.preco,a.moeda)}</b>${chg(a.m.var1d,'')}</span></button>`).join('')||'<div class="empty">Nenhum ativo nesta lista.</div>';
+}
+$('rows').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(b)openSheet(b.dataset.id)});
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.t;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));$('listView').hidden=TAB==='alertas';$('alertView').hidden=TAB!=='alertas';if(TAB==='alertas')renderAlerts();else renderRows()});
+
+function openSheet(id){const a=DATA.ativos.find(x=>x.id===id);if(!a)return;$('sheetIn').innerHTML='<div class="grab"></div><div class="card" id="sc"></div>';detail(a,$('sc'),{sheet:true});$('sheet').classList.add('open');$('backdrop').classList.add('open');$('sheet').scrollTop=0}
+function closeSheet(){$('sheet').classList.remove('open');$('backdrop').classList.remove('open')}
+$('backdrop').onclick=closeSheet;document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+
+/* ---------- alertas ---------- */
+function renderAlertBanner(){
+  const al=DATA.alerta,last=(DATA.alertas||[])[0];const recent=last&&Date.now()-last.em<24*3600e3;
+  if(!(al&&al.rompeu)&&!recent){$('alertBox').innerHTML='';return}
+  const p=al&&al.rompeu?al.preco:last.preco,mn=al&&al.rompeu?al.minAnterior:last.minAnterior;
+  $('alertBox').innerHTML=`<div class="alert" role="alert"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span>
+    <b>Bitcoin na mínima do mês: ${money(p,'BRL')}</b><p>Abaixo da mínima anterior de ${DATA.regraAlerta.diasMinima} dias (${money(mn,'BRL')}). Pela sua regra, é ponto de compra. Não é recomendação de investimento.</p></div>`;
+}
+function renderAlerts(){
+  const al=DATA.alerta,r=DATA.regraAlerta,wa=DATA.whatsapp&&DATA.whatsapp.ativo;
+  const falta=al?(al.preco/al.minAnterior-1)*100:null;
+  const notifOk=('Notification' in window)&&Notification.permission==='granted';
+  $('alertView').innerHTML=`
+   <div class="card"><h2 style="font-size:17px">Sua regra de compra</h2>
+     <p>Avisar quando o <b>Bitcoin</b> ficar abaixo da <b>menor cotação dos últimos ${r.diasMinima} dias</b>. Depois de um aviso, só avisa de novo se cair mais ${r.novoAlertaSeCairMaisPct}% ou depois de ${r.repetirAposHoras} horas.</p>
+     ${al?`<div class="grid2 tn"><div class="kv"><span>Preço agora</span><b>${money(al.preco,'BRL')}</b></div><div class="kv"><span>Mínima anterior (${r.diasMinima}d)</span><b>${money(al.minAnterior,'BRL')}</b></div></div>
+       <div class="status"><i style="background:${al.rompeu?'var(--up)':'var(--muted)'}"></i>${al.rompeu?'<b>Regra disparada:</b> preço abaixo da mínima do mês.':`Faltam <b class="tn">${pct(-falta)}</b> de queda para disparar o alerta.`}</div>`:''}
+     <p class="note">Verificação automática a cada 30 minutos.</p></div>
+   <div class="card"><h2 style="font-size:17px">WhatsApp</h2>
+     <div class="status"><i style="background:${wa?'var(--up)':'var(--warn)'}"></i>${wa?'<b>Ativo.</b> Os alertas chegam no seu WhatsApp.':'<b>Aguardando ativação.</b> O serviço gratuito (CallMeBot) está sem vagas no momento.'}</div>
+     ${wa?'':`<ol class="steps"><li>Acesse callmebot.com e procure "Free WhatsApp API".</li><li>Quando o número aparecer, salve nos contatos e envie: <b>I allow callmebot to send me messages</b>.</li><li>Você recebe uma chave (apikey). Envie a chave e o seu número para ativarmos.</li></ol>`}</div>
+   <div class="card"><h2 style="font-size:17px">Avisos neste aparelho</h2>
+     <p class="sub">Mostra uma notificação quando você abrir o app e houver alerta novo.</p>
+     <button class="btn ${notifOk?'ghost':''}" id="notif">${notifOk?'Avisos ativados neste aparelho':'Ativar avisos neste aparelho'}</button></div>
+   <div class="card"><h2 style="font-size:17px">Histórico de alertas</h2>
+     ${(DATA.alertas||[]).length?`<ul class="hist tn">${DATA.alertas.map(h=>`<li><span>${dt(h.em)}</span><span>${money(h.preco,'BRL')} <span class="sub">· WhatsApp ${esc(h.whatsapp)}</span></span></li>`).join('')}</ul>`:'<p class="sub">Nenhum alerta disparado ainda.</p>'}</div>`;
+  const nb=$('notif');if(nb)nb.onclick=async()=>{if(!('Notification' in window)){toast('Este navegador não suporta avisos.');return}const p=await Notification.requestPermission();toast(p==='granted'?'Avisos ativados.':'Avisos não autorizados.');renderAlerts()};
+}
+function localNotify(){
+  const last=(DATA.alertas||[])[0];if(!last)return;
+  const seen=Number(store('seenAlert')||0);if(last.em<=seen)return;store('seenAlert',String(last.em));
+  if(('Notification' in window)&&Notification.permission==='granted'){
+    const body=`Preço ${money(last.preco,'BRL')}, abaixo da mínima de ${DATA.regraAlerta.diasMinima} dias.`;
+    navigator.serviceWorker&&navigator.serviceWorker.ready.then(r=>r.showNotification('Bitcoin na mínima do mês',{body,icon:'icon-192.png',tag:'btc-min'})).catch(()=>{try{new Notification('Bitcoin na mínima do mês',{body})}catch(e){}});
+  }
+}
+
+/* ---------- carregar ---------- */
+let tt;function toast(m){$('toast').textContent=m;$('toast').classList.add('show');clearTimeout(tt);tt=setTimeout(()=>$('toast').classList.remove('show'),2600)}
+async function load(manual){
+  $('refresh').classList.add('spin');
+  try{
+    const r=await fetch('data.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error(r.status);
+    DATA=await r.json();
+    $('upd').textContent='Atualizado '+ago(DATA.atualizado);
+    renderAlertBanner();
+    const btc=DATA.ativos.find(a=>a.tipo==='cripto');if(btc)detail(btc,$('btcCard'));
+    if(TAB==='alertas')renderAlerts();else renderRows();
+    $('src').textContent=`Fontes: CoinGecko (Bitcoin) e Yahoo Finance (ações e dólar). Dólar: ${DATA.usdbrl?money(DATA.usdbrl,'BRL',2):'—'}. Ações podem ter atraso de até 15 minutos.`;
+    localNotify();
+    if(manual)toast('Dados atualizados.');
+  }catch(e){$('upd').textContent='Sem conexão';if(manual||!DATA)toast('Não consegui carregar os dados. Verifique a internet.')}
+  finally{$('refresh').classList.remove('spin')}
+}
+$('refresh').onclick=()=>load(true);
+setInterval(()=>{if(DATA)$('upd').textContent='Atualizado '+ago(DATA.atualizado)},30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load()});
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{$('btcCard')._redraw&&$('btcCard')._redraw();const s=$('sc');s&&s._redraw&&s._redraw()},150)});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+load();
+})();
+</script>
+</body>
+</html>
