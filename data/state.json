@@ -1,4 +1,14 @@
 {
- "ultimoAlerta": null,
- "historico": []
+ "ultimoAlerta": {
+  "em": 1795199343290,
+  "preco": 351357
+ },
+ "historico": [
+  {
+   "em": 1795199343290,
+   "preco": 351357,
+   "minAnterior": 351788,
+   "whatsapp": "desligado"
+  }
+ ]
 }
